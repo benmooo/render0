@@ -13,63 +13,17 @@
 /// let color = (255, 0, 0);
 /// line(0, 0, 9, 9, &mut buffer, size, color);
 /// ```
-#[allow(unused)]
-pub fn draw_line0(
-    mut x0: i32,
-    mut y0: i32,
-    mut x1: i32,
-    mut y1: i32,
-    buffer: &mut [u32],
-    size: (u32, u32),
-    color: (u32, u32, u32),
-) {
-    let steep = y1.abs_diff(y0) > x1.abs_diff(x0);
-    if steep {
-        std::mem::swap(&mut x0, &mut y0);
-        std::mem::swap(&mut x1, &mut y1);
-    }
-
-    if x0 > x1 {
-        std::mem::swap(&mut x0, &mut x1);
-        std::mem::swap(&mut y0, &mut y1);
-    }
-
-    let dx = x1 - x0;
-    let dy = y1 - y0;
-    let incr_e = 2 * dy;
-    let incr_ne = 2 * (dy - dx);
-    let mut d = 2 * dy - dx;
-    let mut y = y0;
-    let y_step = if y0 < y1 { 1 } else { -1 };
-
-    for x in x0..=x1 {
-        if steep {
-            buffer[(x as u32 * size.0 + y as u32) as usize] =
-                (color.0 << 16) | (color.1 << 8) | color.2;
-        } else {
-            buffer[(y as u32 * size.0 + x as u32) as usize] =
-                (color.0 << 16) | (color.1 << 8) | color.2;
-        }
-
-        if d < 0 {
-            d += incr_e;
-        } else {
-            d += incr_ne;
-            y += y_step;
-        }
-    }
-}
-
-#[allow(unused)]
 pub fn draw_line(
-    mut x0: u32,
-    mut y0: u32,
-    mut x1: u32,
-    mut y1: u32,
+    p0: (u32, u32),
+    p1: (u32, u32),
     buffer: &mut [u32],
     size: (u32, u32),
     color: (u32, u32, u32),
 ) {
+    let (mut x0, mut y0) = p0;
+    let (mut x1, mut y1) = p1;
+    let (width, height) = size;
+
     let steep = y1.abs_diff(y0) > x1.abs_diff(x0);
     if steep {
         std::mem::swap(&mut x0, &mut y0);
@@ -91,9 +45,9 @@ pub fn draw_line(
 
     for x in x0..=x1 {
         if steep {
-            buffer[(x * size.0 + y as u32) as usize] = color;
+            buffer[((height - x - 1) * width + y as u32) as usize] = color;
         } else {
-            buffer[(y as u32 * size.0 + x) as usize] = color;
+            buffer[((height - y as u32 - 1) * width + x) as usize] = color;
         }
 
         error -= dy;

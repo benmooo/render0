@@ -13,7 +13,7 @@ use winit::window::WindowBuilder;
 fn main() -> anyhow::Result<()> {
     // setup window
     let el = EventLoop::new()?;
-    let window = Rc::new(WindowBuilder::new().build(&el)?);
+    let window = Rc::new(WindowBuilder::new().with_title("render0").build(&el)?);
     let context = softbuffer::Context::new(window.clone()).unwrap();
     let mut surface = softbuffer::Surface::new(&context, window.clone()).unwrap();
 
@@ -41,10 +41,8 @@ fn main() -> anyhow::Result<()> {
 
                 let mut buffer = surface.buffer_mut().unwrap();
                 // draw_line(
-                //     0,
-                //     0,
-                //     width - 1,
-                //     height - 1,
+                //     (0, 0),
+                //     (width - 1, height - 1),
                 //     &mut buffer,
                 //     (width, height),
                 //     (255, 0, 0),
@@ -119,10 +117,8 @@ fn draw_model_lines(models: &Vec<Model>, buffer: &mut [u32], width: u32, height:
 
             for edge in face_edges {
                 draw_line(
-                    edge.0 .0,
-                    edge.0 .1,
-                    edge.1 .0,
-                    edge.1 .1,
+                    (edge.0 .0, edge.0 .1),
+                    (edge.1 .0, edge.1 .1),
                     buffer,
                     (width, height),
                     color,
