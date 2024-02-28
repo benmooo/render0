@@ -47,7 +47,7 @@ fn main() -> anyhow::Result<()> {
                 //     (width, height),
                 //     (255, 0, 0),
                 // );
-                draw_model_lines(&models, &mut buffer, width, height);
+                draw_model_lines(&models, &mut buffer, (width, height));
                 buffer.present().unwrap();
             }
             Event::WindowEvent {
@@ -82,7 +82,7 @@ fn main() -> anyhow::Result<()> {
 /// * `buffer` - A mutable slice of u32 values representing the buffer where the lines will be drawn.
 /// * `width` - The width of the buffer.
 /// * `height` - The height of the buffer.
-fn draw_model_lines(models: &Vec<Model>, buffer: &mut [u32], width: u32, height: u32) {
+fn draw_model_lines(models: &Vec<Model>, buffer: &mut [u32], viewport: (u32, u32)) {
     for model in models {
         let mesh = &model.mesh;
 
@@ -97,16 +97,9 @@ fn draw_model_lines(models: &Vec<Model>, buffer: &mut [u32], width: u32, height:
             let v3 =
                 &mesh.positions[(face_indices[2] as usize * 3)..(face_indices[2] as usize * 3 + 3)];
 
-            // Convert vertices from NDC to screen coordinates
-            let to_screen_coords = |v: (f32, f32)| {
-                (
-                    ((v.0 + 1.0) * (width - 1) as f32 / 2.0) as u32,
-                    ((v.1 + 1.0) * (height - 1) as f32 / 2.0) as u32,
-                )
-            };
-            let v1_screen = to_screen_coords((v1[0], v1[1]));
-            let v2_screen = to_screen_coords((v2[0], v2[1]));
-            let v3_screen = to_screen_coords((v3[0], v3[1]));
+            let v1_screen = to_screen_coords((v1[0], v1[1]), viewport);
+            let v2_screen = to_screen_coords((v2[0], v2[1]), viewport);
+            let v3_screen = to_screen_coords((v3[0], v3[1]), viewport);
 
             let vertices = vec![v1_screen, v2_screen, v3_screen];
             let face_edges: Vec<(&(u32, u32), &(u32, u32))> = vertices
@@ -120,10 +113,18 @@ fn draw_model_lines(models: &Vec<Model>, buffer: &mut [u32], width: u32, height:
                     (edge.0 .0, edge.0 .1),
                     (edge.1 .0, edge.1 .1),
                     buffer,
-                    (width, height),
+                    viewport,
                     color,
                 );
             }
         }
     }
+}
+
+// Convert vertices from NDC to screen coordinates
+fn to_screen_coords(p: (f32, f32), viewport: (u32, u32)) -> (u32, u32) {
+    (
+        ((p.0 + 1.0) * (viewport.0 - 1) as f32 / 2.0) as u32,
+        ((p.1 + 1.0) * (viewport.1 - 1) as f32 / 2.0) as u32,
+    )
 }
