@@ -47,7 +47,8 @@ fn main() -> anyhow::Result<()> {
                 //     (width, height),
                 //     (255, 0, 0),
                 // );
-                draw_model_lines(&models, &mut buffer, (width, height));
+                let mut ctx = RenderContext::new(&mut buffer, (width, height));
+                render_wireframe(&models, &mut ctx);
                 buffer.present().unwrap();
             }
             Event::WindowEvent {
@@ -74,15 +75,15 @@ fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Wireframe renderer
 /// Draws lines between the vertices of the faces of the models on the buffer.
 ///
 /// # Arguments
-///
 /// * `models` - A vector of models, where each model contains a mesh with vertex positions and face indices.
 /// * `buffer` - A mutable slice of u32 values representing the buffer where the lines will be drawn.
-/// * `width` - The width of the buffer.
-/// * `height` - The height of the buffer.
-fn draw_model_lines(models: &Vec<Model>, buffer: &mut [u32], viewport: (u32, u32)) {
+/// * `viewport` - The screen viewport
+fn render_wireframe(models: &Vec<Model>, ctx: &mut RenderContext) {
+    let viewport = ctx.viewport;
     for model in models {
         let mesh = &model.mesh;
 
@@ -112,7 +113,7 @@ fn draw_model_lines(models: &Vec<Model>, buffer: &mut [u32], viewport: (u32, u32
                 draw_line(
                     (edge.0 .0, edge.0 .1),
                     (edge.1 .0, edge.1 .1),
-                    buffer,
+                    ctx.buffer,
                     viewport,
                     color,
                 );
@@ -127,4 +128,15 @@ fn to_screen_coords(p: (f32, f32), viewport: (u32, u32)) -> (u32, u32) {
         ((p.0 + 1.0) * (viewport.0 - 1) as f32 / 2.0) as u32,
         ((p.1 + 1.0) * (viewport.1 - 1) as f32 / 2.0) as u32,
     )
+}
+
+struct RenderContext<'a> {
+    buffer: &'a mut [u32],
+    viewport: (u32, u32),
+}
+
+impl<'a> RenderContext<'a> {
+    pub fn new(buffer: &'a mut [u32], viewport: (u32, u32)) -> Self {
+        Self { buffer, viewport }
+    }
 }
