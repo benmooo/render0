@@ -1,3 +1,4 @@
+mod color;
 mod draw;
 mod model;
 mod triangle;
@@ -10,6 +11,7 @@ use std::num::NonZeroU32;
 use std::rc::Rc;
 use tobj::Model;
 use triangle::draw_triangle;
+use winit::dpi::PhysicalSize;
 use winit::event::{Event, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
@@ -17,7 +19,12 @@ use winit::window::WindowBuilder;
 fn main() -> anyhow::Result<()> {
     // setup window
     let el = EventLoop::new()?;
-    let window = Rc::new(WindowBuilder::new().with_title("render0").build(&el)?);
+    let window = Rc::new(
+        WindowBuilder::new()
+            .with_title("render0")
+            .with_inner_size(PhysicalSize::new(1200, 1200))
+            .build(&el)?,
+    );
     let context = softbuffer::Context::new(window.clone()).unwrap();
     let mut surface = softbuffer::Surface::new(&context, window.clone()).unwrap();
 
@@ -43,14 +50,25 @@ fn main() -> anyhow::Result<()> {
                     )
                     .unwrap();
 
+                let viewport = Viewport::new(width, height, (0, 0));
+
                 let mut buffer = surface.buffer_mut().unwrap();
-                let mut ctx = RenderContext::new(&mut buffer, (width, height));
+                let mut zbuf = vec![f32::MIN; (width * height) as usize];
+                let mut ctx = RenderContext::new(&mut buffer, viewport, &mut zbuf);
                 // draw_triangle(
                 //     [(0, 0), (width / 2, height / 2), (width - 1, 0)],
                 //     &mut ctx,
                 //     (230, 100, 180),
                 // );
 
+                // let color = (230, 100, 180);
+                // let color = (color.0 << 16) | (color.1 << 8) | color.2;
+                // draw_line(
+                //     (0, 0),
+                //     (width as i32 - 1, height as i32 - 1),
+                //     &mut ctx,
+                //     color,
+                // );
                 // render_wireframe(&models, &mut ctx);
                 render_triangles(&models, &mut ctx);
                 buffer.present().unwrap();
@@ -88,7 +106,6 @@ fn main() -> anyhow::Result<()> {
 /// * `viewport` - The screen viewport
 #[allow(unused)]
 fn render_wireframe(models: &Vec<Model>, ctx: &mut RenderContext) {
-    let viewport = ctx.viewport;
     for model in models {
         let mesh = &model.mesh;
 
@@ -99,51 +116,52 @@ fn render_wireframe(models: &Vec<Model>, ctx: &mut RenderContext) {
             let v2 = &mesh.positions[(f[1] as usize * 3)..(f[1] as usize * 3 + 3)];
             let v3 = &mesh.positions[(f[2] as usize * 3)..(f[2] as usize * 3 + 3)];
 
-            let v1_screen = to_screen_coords((v1[0], v1[1]), viewport);
-            let v2_screen = to_screen_coords((v2[0], v2[1]), viewport);
-            let v3_screen = to_screen_coords((v3[0], v3[1]), viewport);
+            let v1_screen = ndc_to_screen((v1[0], v1[1]), ctx.viewport);
+            let v2_screen = ndc_to_screen((v2[0], v2[1]), ctx.viewport);
+            let v3_screen = ndc_to_screen((v3[0], v3[1]), ctx.viewport);
 
             let vertices = [v1_screen, v2_screen, v3_screen];
             let color = (220, 100, 120);
+            let color = (color.0 << 16) | (color.1 << 8) | color.2;
 
             for (i, v0) in vertices.iter().enumerate() {
                 let v1 = vertices[(i + 1) % 3];
-                draw_line(*v0, v1, ctx.buffer, viewport, color);
+                draw_line(*v0, v1, ctx, color);
             }
         }
     }
 }
 
 fn render_triangles(models: &Vec<Model>, ctx: &mut RenderContext) {
-    let viewport = ctx.viewport;
-
     let light_dir = -Vec3::Z;
 
     for model in models {
         let mesh = &model.mesh;
 
-        // Loop through the faces by indices
+        // Loop through the facets
         for f in mesh.indices.windows(3).step_by(3) {
-            let v1 = &mesh.positions[(f[0] as usize * 3)..(f[0] as usize * 3 + 3)];
-            let v2 = &mesh.positions[(f[1] as usize * 3)..(f[1] as usize * 3 + 3)];
-            let v3 = &mesh.positions[(f[2] as usize * 3)..(f[2] as usize * 3 + 3)];
+            let mut vertices = [Vec3::default(); 3];
 
-            let v1_screen = to_screen_coords((v1[0], v1[1]), viewport);
-            let v2_screen = to_screen_coords((v2[0], v2[1]), viewport);
-            let v3_screen = to_screen_coords((v3[0], v3[1]), viewport);
+            for (i, v) in f
+                .iter()
+                .map(|&v| &mesh.positions[v as usize * 3..(v + 1) as usize * 3])
+                .enumerate()
+            {
+                vertices[i] = Vec3::from_slice(v);
+            }
             // Access vertices of the face using face_indices
-            let vertices = [v1_screen, v2_screen, v3_screen];
-
-            let n = (Vec3::from_slice(v3) - Vec3::from_slice(v1))
-                .cross(Vec3::from_slice(v2) - Vec3::from_slice(v1));
+            let n = (vertices[2] - vertices[0]).cross(vertices[1] - vertices[0]);
             let intensity = light_dir.dot(n.normalize());
 
-            if intensity > 0. {
-                let volumn = (intensity * 255.).floor() as u32;
-                let color = (volumn, volumn, volumn);
-
-                draw_triangle(&vertices, ctx, color)
+            if intensity < 0. {
+                continue;
             }
+
+            let volumn = (intensity * 255.).floor() as u32;
+            let color = (volumn, volumn, volumn);
+            let color = (color.0 << 16) | (color.1 << 8) | color.2;
+
+            draw_triangle(&vertices, ctx, color)
         }
     }
 }
@@ -168,11 +186,50 @@ fn generate_random_color() -> (u32, u32, u32) {
 
 struct RenderContext<'a> {
     buffer: &'a mut [u32],
-    viewport: (u32, u32),
+    viewport: Viewport,
+    zbuf: &'a mut [f32],
 }
 
 impl<'a> RenderContext<'a> {
-    pub fn new(buffer: &'a mut [u32], viewport: (u32, u32)) -> Self {
-        Self { buffer, viewport }
+    pub fn new(buffer: &'a mut [u32], viewport: Viewport, zbuf: &'a mut [f32]) -> Self {
+        Self {
+            buffer,
+            viewport,
+            zbuf,
+        }
     }
+}
+
+#[derive(Clone, Copy)]
+struct Viewport {
+    width: u32,
+    height: u32,
+    center: (i32, i32),
+}
+impl Viewport {
+    pub fn new(width: u32, height: u32, center: (i32, i32)) -> Self {
+        Self {
+            width,
+            height,
+            center,
+        }
+    }
+}
+
+fn ndc_to_screen(ndc: (f32, f32), viewport: Viewport) -> (i32, i32) {
+    let x = (ndc.0 + 1.) / 2. * (viewport.width as f32 - 1.) + viewport.center.0 as f32;
+    let y = (ndc.1 + 1.) / 2. * (viewport.height as f32 - 1.) + viewport.center.1 as f32;
+    // Adjust for aspect ratio
+    // let aspect_ratio = viewport.width as f32 / viewport.height as f32;
+    // let x = x * aspect_ratio;
+    // Adjust for origin (assuming OpenGL-like coordinates)
+    (x as i32, y as i32)
+}
+
+fn screen_to_ndc(p: (i32, i32), viewport: Viewport) -> Vec3 {
+    let (x, y) = p;
+    let x = x as f32 / (viewport.width as f32 - 1.) * 2. - 1.;
+    let y = y as f32 / (viewport.height as f32 - 1.) * 2. - 1.;
+
+    Vec3::from_array([x, y, 1.])
 }
