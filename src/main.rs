@@ -69,8 +69,8 @@ fn main() -> anyhow::Result<()> {
                 //     &mut ctx,
                 //     color,
                 // );
-                // render_wireframe(&models, &mut ctx);
                 render_triangles(&models, &mut ctx);
+                // render_wireframe(&models, &mut ctx);
                 buffer.present().unwrap();
             }
             Event::WindowEvent {
@@ -167,6 +167,7 @@ fn render_triangles(models: &Vec<Model>, ctx: &mut RenderContext) {
 }
 
 // Convert vertices from NDC to screen coordinates
+#[allow(unused)]
 fn to_screen_coords(p: (f32, f32), viewport: (u32, u32)) -> (u32, u32) {
     (
         ((p.0 + 1.0) * (viewport.0 - 1) as f32 / 2.0) as u32,
@@ -226,6 +227,7 @@ fn ndc_to_screen(ndc: (f32, f32), viewport: Viewport) -> (i32, i32) {
     (x as i32, y as i32)
 }
 
+#[allow(unused)]
 fn screen_to_ndc(p: (i32, i32), viewport: Viewport) -> Vec3 {
     let (x, y) = p;
     let x = x as f32 / (viewport.width as f32 - 1.) * 2. - 1.;

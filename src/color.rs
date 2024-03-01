@@ -1,3 +1,4 @@
+#[allow(unused)]
 pub fn hsl_to_rgb(hue: f32, saturation: f32, lightness: f32) -> (f32, f32, f32) {
     let chroma = (1.0 - (2.0 * lightness - 1.0).abs()) * saturation;
     let hue_prime = hue / 60.0;
