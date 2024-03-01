@@ -3,6 +3,8 @@ use glam::{IVec2, IVec3, Vec3};
 use crate::{draw::draw_pixel, ndc_to_screen, RenderContext};
 
 pub fn draw_triangle(vertices: &[Vec3; 3], ctx: &mut RenderContext, color: u32) {
+    let (width, _heigh) = (ctx.viewport.width as i32, ctx.viewport.height as i32);
+
     // conver vertices to ndc coordinates
     let mut scr_vs = [IVec2::default(); 3];
     for (i, v) in vertices.iter().enumerate() {
@@ -25,8 +27,20 @@ pub fn draw_triangle(vertices: &[Vec3; 3], ctx: &mut RenderContext, color: u32) 
                 continue;
             }
 
-            // check if the pixel is more close to the camera
+            let z = vertices
+                .iter()
+                .enumerate()
+                .fold(0., |acc, (i, Vec3 { x: _, y: _, z })| {
+                    acc + z * bc_screen[i]
+                });
 
+            // check if the pixel is more close to the camera
+            let z_index = (x + y * width) as usize;
+            if ctx.zbuf[z_index] > z {
+                continue;
+            }
+
+            ctx.zbuf[z_index] = z;
             draw_pixel(ctx, (x, y), color);
         }
     }
