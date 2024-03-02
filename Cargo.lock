@@ -941,7 +941,6 @@ name = "render0"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "embedded-graphics",
  "glam",
  "rand",
  "softbuffer",
