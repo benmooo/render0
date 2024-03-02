@@ -1,3 +1,4 @@
+use tinytga::RawTga;
 use tobj::Model;
 
 pub fn load_model() -> Vec<Model> {
@@ -15,6 +16,14 @@ pub fn load_model() -> Vec<Model> {
 
     models
 }
+
+#[allow(unused)]
+pub fn load_texture() -> RawTga<'static> {
+    let data = include_bytes!("../assets/african_head_diffuse.tga");
+    let img = RawTga::from_slice(data).unwrap();
+    img
+}
+
 #[cfg(test)]
 mod test {
     use super::load_model;

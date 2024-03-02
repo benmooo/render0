@@ -1,8 +1,8 @@
-use glam::{IVec2, IVec3, Vec3};
+use glam::{IVec2, IVec3, Vec2, Vec3};
 
 use crate::{draw::draw_pixel, ndc_to_screen, RenderContext};
 
-pub fn draw_triangle(vertices: &[Vec3; 3], ctx: &mut RenderContext, color: u32) {
+pub fn draw_triangle(vertices: &[Vec3; 3], tex_coords: &[Vec2; 3], ctx: &mut RenderContext) {
     let (width, _heigh) = (ctx.viewport.width as i32, ctx.viewport.height as i32);
 
     // conver vertices to ndc coordinates
@@ -27,12 +27,10 @@ pub fn draw_triangle(vertices: &[Vec3; 3], ctx: &mut RenderContext, color: u32) 
                 continue;
             }
 
-            let z = vertices
-                .iter()
-                .enumerate()
-                .fold(0., |acc, (i, Vec3 { x: _, y: _, z })| {
-                    acc + z * bc_screen[i]
-                });
+            let mut z = 0.;
+            for i in 0..3 {
+                z += bc_screen[i] * vertices[i].z;
+            }
 
             // check if the pixel is more close to the camera
             let z_index = (x + y * width) as usize;
@@ -40,7 +38,27 @@ pub fn draw_triangle(vertices: &[Vec3; 3], ctx: &mut RenderContext, color: u32) 
                 continue;
             }
 
+            // get the vertex texture color
+
+            let tex_coord = tex_coords
+                .iter()
+                .enumerate()
+                .fold(Vec2::ZERO, |acc, (i, &v)| acc + bc_screen[i] * v);
+
+            let size = ctx.diffuse_texture.size;
+            let tex_coord = (
+                (tex_coord.x * size.0 as f32) as u32,
+                (tex_coord.y * size.1 as f32) as u32,
+            );
+
+            let index = (tex_coord.1 * size.0 + tex_coord.0) as usize;
+            let color = ctx.diffuse_texture.pixels[index];
+
+            // println!("x: {}, y: {}, index: {}", tex_coord.0, tex_coord.1, index);
+
+            // update zbuffer;
             ctx.zbuf[z_index] = z;
+            // iterpolate (x,y) with barycentric coordinates
             draw_pixel(ctx, (x, y), color);
         }
     }

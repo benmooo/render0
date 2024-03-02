@@ -7,8 +7,10 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.79"
+embedded-graphics = "0.8.1"
 glam = "0.25.0"
 rand = "0.8.5"
 softbuffer = "0.4.1"
+tinytga = "0.5.0"
 tobj = "4.0.0"
 winit = "0.29.10"
