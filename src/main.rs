@@ -4,7 +4,7 @@ mod model;
 mod triangle;
 
 use draw::draw_line;
-use glam::{Vec2, Vec3};
+use glam::{Mat2, Vec2, Vec3, Vec3Swizzles};
 use model::{load_model, load_texture};
 use rand::{thread_rng, Rng};
 use std::num::NonZeroU32;
@@ -126,16 +126,22 @@ fn render_wireframe(models: &Vec<Model>, ctx: &mut RenderContext) {
         // Loop through the faces by indices
         for f in mesh.indices.windows(3).step_by(3) {
             // Access vertices of the face using face_indices
-            let v1 = &mesh.positions[(f[0] as usize * 3)..(f[0] as usize * 3 + 3)];
-            let v2 = &mesh.positions[(f[1] as usize * 3)..(f[1] as usize * 3 + 3)];
-            let v3 = &mesh.positions[(f[2] as usize * 3)..(f[2] as usize * 3 + 3)];
+            // let v1 = &mesh.positions[(f[0] as usize * 3)..(f[0] as usize * 3 + 3)];
+            // let v2 = &mesh.positions[(f[1] as usize * 3)..(f[1] as usize * 3 + 3)];
+            // let v3 = &mesh.positions[(f[2] as usize * 3)..(f[2] as usize * 3 + 3)];
 
-            let v1_screen = ndc_to_screen((v1[0], v1[1]), ctx.viewport);
-            let v2_screen = ndc_to_screen((v2[0], v2[1]), ctx.viewport);
-            let v3_screen = ndc_to_screen((v3[0], v3[1]), ctx.viewport);
+            // let v1_screen = ndc_to_screen((v1[0], v1[1]), ctx.viewport);
+            // let v2_screen = ndc_to_screen((v2[0], v2[1]), ctx.viewport);
+            // let v3_screen = ndc_to_screen((v3[0], v3[1]), ctx.viewport);
 
-            let vertices = [v1_screen, v2_screen, v3_screen];
-            let color = (220, 100, 120);
+            let mut vertices = [Vec2::default(); 3];
+            for i in 0..3 {
+                let indices = &mesh.positions[(f[i] as usize * 3)..(f[i] as usize * 3 + 3)];
+                let ndc = Vec3::from_slice(indices).xy();
+                vertices[i] = ndc_to_screen(ndc, ctx.viewport);
+            }
+
+            let color = (250, 240, 210);
             let color = (color.0 << 16) | (color.1 << 8) | color.2;
 
             for (i, v0) in vertices.iter().enumerate() {
@@ -146,6 +152,7 @@ fn render_wireframe(models: &Vec<Model>, ctx: &mut RenderContext) {
     }
 }
 
+#[allow(unused)]
 fn render_triangles(models: &Vec<Model>, ctx: &mut RenderContext) {
     let light_dir = -Vec3::Z;
 
@@ -251,14 +258,10 @@ impl Viewport {
     }
 }
 
-fn ndc_to_screen(ndc: (f32, f32), viewport: Viewport) -> (i32, i32) {
-    let x = (ndc.0 + 1.) / 2. * (viewport.width as f32 - 1.) + viewport.center.0 as f32;
-    let y = (ndc.1 + 1.) / 2. * (viewport.height as f32 - 1.) + viewport.center.1 as f32;
-    // Adjust for aspect ratio
-    // let aspect_ratio = viewport.width as f32 / viewport.height as f32;
-    // let x = x * aspect_ratio;
-    // Adjust for origin (assuming OpenGL-like coordinates)
-    (x as i32, y as i32)
+fn ndc_to_screen(ndc: Vec2, v: Viewport) -> Vec2 {
+    let scale = Mat2::from_cols_array(&[v.width as f32, 0., 0., v.height as f32]);
+    let coord = (ndc + 1.) / 2.;
+    scale * coord
 }
 
 #[allow(unused)]

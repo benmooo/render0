@@ -1,3 +1,5 @@
+use glam::Vec2;
+
 use crate::RenderContext;
 
 /// Draws a line on a buffer using Bresenham's line algorithm.
@@ -6,12 +8,16 @@ use crate::RenderContext;
 /// The buffer is a mutable slice representing the buffer where the line will be drawn.
 /// The size parameter is the size of the buffer as a tuple of (width, height).
 /// The color parameter is the RGB color of the line as a tuple of (red, green, blue) values.
-pub fn draw_line(p0: (i32, i32), p1: (i32, i32), ctx: &mut RenderContext, color: u32) {
-    let steep = (p1.1 - p0.1).abs() > (p1.0 - p0.0).abs();
+pub fn draw_line(p0: Vec2, p1: Vec2, ctx: &mut RenderContext, color: u32) {
+    let v = p1 - p0;
+    let steep = v.y.abs() > v.x.abs();
+    let p0 = (p0 - 0.5).as_ivec2();
+    let p1 = (p1 - 0.5).as_ivec2();
+
     if steep {
-        draw_steep_line(p0, p1, ctx, color);
+        draw_steep_line((p0.x, p0.y), (p1.x, p1.y), ctx, color);
     } else {
-        draw_flat_line(p0, p1, ctx, color);
+        draw_flat_line((p0.x, p0.y), (p1.x, p1.y), ctx, color);
     }
 }
 
