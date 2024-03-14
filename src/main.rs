@@ -1,12 +1,15 @@
+mod camera;
 mod color;
 mod draw;
 mod model;
 mod triangle;
 
+use camera::Camera;
 use draw::draw_line;
-use glam::{Mat2, Vec2, Vec3, Vec3Swizzles};
+use glam::{Mat4, Vec2, Vec3, Vec4Swizzles};
 use model::{load_model, load_texture};
 use rand::{thread_rng, Rng};
+use std::f32::consts::PI;
 use std::num::NonZeroU32;
 use std::rc::Rc;
 use tobj::Model;
@@ -126,19 +129,11 @@ fn render_wireframe(models: &Vec<Model>, ctx: &mut RenderContext) {
         // Loop through the faces by indices
         for f in mesh.indices.windows(3).step_by(3) {
             // Access vertices of the face using face_indices
-            // let v1 = &mesh.positions[(f[0] as usize * 3)..(f[0] as usize * 3 + 3)];
-            // let v2 = &mesh.positions[(f[1] as usize * 3)..(f[1] as usize * 3 + 3)];
-            // let v3 = &mesh.positions[(f[2] as usize * 3)..(f[2] as usize * 3 + 3)];
-
-            // let v1_screen = ndc_to_screen((v1[0], v1[1]), ctx.viewport);
-            // let v2_screen = ndc_to_screen((v2[0], v2[1]), ctx.viewport);
-            // let v3_screen = ndc_to_screen((v3[0], v3[1]), ctx.viewport);
-
             let mut vertices = [Vec2::default(); 3];
             for i in 0..3 {
                 let indices = &mesh.positions[(f[i] as usize * 3)..(f[i] as usize * 3 + 3)];
-                let ndc = Vec3::from_slice(indices).xy();
-                vertices[i] = ndc_to_screen(ndc, ctx.viewport);
+                let v = Vec3::from_slice(indices);
+                vertices[i] = ndc_to_screen(v, ctx.viewport);
             }
 
             let color = (250, 240, 210);
@@ -155,6 +150,27 @@ fn render_wireframe(models: &Vec<Model>, ctx: &mut RenderContext) {
 #[allow(unused)]
 fn render_triangles(models: &Vec<Model>, ctx: &mut RenderContext) {
     let light_dir = -Vec3::Z;
+
+    // world space model transform
+    let scale = Mat4::from_scale(Vec3::new(0.8, 0.8, 0.8));
+    let rotation = Mat4::from_rotation_y(PI / 6.);
+    let translation = Mat4::from_translation(Vec3::new(0.1, 0.1, 0.));
+    let model_transform = translation * rotation * scale;
+
+    // view transform
+    let camera = Camera::new(
+        Vec3::new(0., 5., 10.),
+        Default::default(),
+        Vec3::Y,
+        PI / 3.,
+        4. / 3.,
+        0.1,
+        1000.,
+    );
+    let view_transform = camera.get_view_matrix();
+
+    // projection transform
+    let project_transform = camera.get_projection_matrix();
 
     for model in models {
         let mesh = &model.mesh;
@@ -176,6 +192,21 @@ fn render_triangles(models: &Vec<Model>, ctx: &mut RenderContext) {
                 let t = &mesh.texcoords[t_index * 2..(t_index + 1) * 2];
                 vertices[j] = Vec3::from_slice(v);
                 tex_coords[j] = Vec2::from_slice(t);
+            }
+
+            // model transform
+            for i in 0..3 {
+                vertices[i] = (model_transform * vertices[i].extend(1.)).truncate();
+            }
+
+            // view transform
+            for i in 0..3 {
+                vertices[i] = (view_transform * vertices[i].extend(1.)).truncate();
+            }
+
+            // projection transform
+            for i in 0..3 {
+                vertices[i] = (project_transform * vertices[i].extend(1.)).truncate();
             }
 
             let n = (vertices[2] - vertices[0]).cross(vertices[1] - vertices[0]);
@@ -258,10 +289,10 @@ impl Viewport {
     }
 }
 
-fn ndc_to_screen(ndc: Vec2, v: Viewport) -> Vec2 {
-    let scale = Mat2::from_cols_array(&[v.width as f32, 0., 0., v.height as f32]);
+fn ndc_to_screen(ndc: Vec3, v: Viewport) -> Vec2 {
+    let scale = Mat4::from_scale(Vec3::new(v.width as f32, v.height as f32, 1.));
     let coord = (ndc + 1.) / 2.;
-    scale * coord
+    (scale * coord.extend(1.)).xy()
 }
 
 #[allow(unused)]

@@ -1,4 +1,4 @@
-use glam::{IVec2, IVec3, Vec2, Vec3, Vec3Swizzles};
+use glam::{IVec2, IVec3, Vec2, Vec3};
 
 use crate::{draw::draw_pixel, ndc_to_screen, RenderContext};
 
@@ -9,7 +9,7 @@ pub fn draw_triangle(vertices: &[Vec3; 3], tex_coords: &[Vec2; 3], ctx: &mut Ren
     // conver vertices to ndc coordinates
     let mut scr_vs = [IVec2::default(); 3];
     for (i, &v) in vertices.iter().enumerate() {
-        let scr = ndc_to_screen(v.truncate(), ctx.viewport);
+        let scr = ndc_to_screen(v, ctx.viewport);
         scr_vs[i] = (scr - 0.5).as_ivec2();
     }
 
@@ -86,7 +86,7 @@ pub fn draw_triangle0(vertices: &[Vec3; 3], ctx: &mut RenderContext, color: u32)
     // sort the vertices
     let mut scr_v = [IVec2::default(); 3];
     for (i, &v) in vertices.iter().enumerate() {
-        let scr = ndc_to_screen(v.xy(), ctx.viewport);
+        let scr = ndc_to_screen(v, ctx.viewport);
         scr_v[i] = (scr - 0.5).as_ivec2();
     }
     scr_v.sort_by(|a, b| a.y.cmp(&b.y));
@@ -133,8 +133,8 @@ pub fn draw_triangle0(vertices: &[Vec3; 3], ctx: &mut RenderContext, color: u32)
 pub fn draw_triangle1(vertices: &[Vec3; 3], ctx: &mut RenderContext, color: u32) {
     // conver vertices to ndc coordinates
     let mut scr_v = [(0, 0); 3];
-    for (i, v) in vertices.iter().enumerate() {
-        let v = (ndc_to_screen(v.xy(), ctx.viewport) - 0.5).as_ivec2();
+    for (i, &v) in vertices.iter().enumerate() {
+        let v = (ndc_to_screen(v, ctx.viewport) - 0.5).as_ivec2();
         scr_v[i] = (v.x, v.y);
     }
 
