@@ -205,9 +205,9 @@ fn render_triangles(models: &Vec<Model>, ctx: &mut RenderContext) {
             }
 
             // projection transform
-            for i in 0..3 {
-                vertices[i] = (project_transform * vertices[i].extend(1.)).truncate();
-            }
+            // for i in 0..3 {
+            //     vertices[i] = (project_transform * vertices[i].extend(1.)).truncate();
+            // }
 
             let n = (vertices[2] - vertices[0]).cross(vertices[1] - vertices[0]);
             let intensity = light_dir.dot(n.normalize());
@@ -277,6 +277,7 @@ impl<'a> RenderContext<'a> {
 struct Viewport {
     width: u32,
     height: u32,
+    #[allow(unused)]
     center: (i32, i32),
 }
 impl Viewport {
