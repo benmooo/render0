@@ -85,6 +85,8 @@ fn draw_steep_line(mut p0: (i32, i32), mut p1: (i32, i32), ctx: &mut RenderConte
     }
 }
 
+// hello
+
 #[allow(unused)]
 pub fn draw_pixel(ctx: &mut RenderContext, p: (i32, i32), color: u32) {
     let width = ctx.viewport.width;

@@ -19,7 +19,7 @@ pub fn load_model() -> Vec<Model> {
 
 #[allow(unused)]
 pub fn load_texture() -> RawTga<'static> {
-    let data = include_bytes!("../assets/african_head_diffuse.tga");
+    let data = include_bytes!("../../assets/african_head_diffuse.tga");
     let img = RawTga::from_slice(data).unwrap();
     img
 }

@@ -1,6 +1,6 @@
 use glam::{IVec2, IVec3, Vec2, Vec3};
 
-use crate::{draw::draw_pixel, ndc_to_screen, RenderContext};
+use crate::{ndc_to_screen, utils::draw::draw_pixel, RenderContext};
 
 #[allow(unused)]
 pub fn draw_triangle(vertices: &[Vec3; 3], tex_coords: &[Vec2; 3], ctx: &mut RenderContext) {
@@ -13,7 +13,7 @@ pub fn draw_triangle(vertices: &[Vec3; 3], tex_coords: &[Vec2; 3], ctx: &mut Ren
         scr_vs[i] = (scr - 0.5).as_ivec2();
     }
 
-    // bounding box
+    // axias aligned bounding box AABB
     let bbox = scr_vs.iter().fold(
         (i32::MAX, i32::MAX, i32::MIN, i32::MIN),
         |acc, IVec2 { x, y }| (acc.0.min(*x), acc.1.min(*y), acc.2.max(*x), acc.3.max(*y)),

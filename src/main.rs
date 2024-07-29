@@ -1,19 +1,15 @@
-mod camera;
-mod color;
-mod draw;
-mod model;
-mod triangle;
+mod utils;
 
-use camera::Camera;
-use draw::draw_line;
 use glam::{Mat4, Vec2, Vec3, Vec4Swizzles};
-use model::{load_model, load_texture};
 use rand::{thread_rng, Rng};
 use std::f32::consts::PI;
 use std::num::NonZeroU32;
 use std::rc::Rc;
 use tobj::Model;
-use triangle::draw_triangle;
+use utils::camera::Camera;
+use utils::draw::draw_line;
+use utils::model::{load_model, load_texture};
+use utils::triangle::draw_triangle;
 use winit::dpi::PhysicalSize;
 use winit::event::{Event, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
@@ -78,14 +74,6 @@ fn main() -> anyhow::Result<()> {
                 let mut ctx =
                     RenderContext::new(&mut buffer, viewport, &mut zbuf, &diffuse_texture);
 
-                // let color = (230, 100, 180);
-                // let color = (color.0 << 16) | (color.1 << 8) | color.2;
-                // draw_line(
-                //     (0, 0),
-                //     (width as i32 - 1, height as i32 - 1),
-                //     &mut ctx,
-                //     color,
-                // );
                 render_triangles(&models, &mut ctx);
                 // render_wireframe(&models, &mut ctx);
                 buffer.present().unwrap();
@@ -153,9 +141,9 @@ fn render_triangles(models: &Vec<Model>, ctx: &mut RenderContext) {
 
     // world space model transform
     let scale = Mat4::from_scale(Vec3::new(0.8, 0.8, 0.8));
-    let rotation = Mat4::from_rotation_y(PI / 6.);
+    // let rotation = Mat4::from_rotation_y(PI / 6.);
     let translation = Mat4::from_translation(Vec3::new(0.1, 0.1, 0.));
-    let model_transform = translation * rotation * scale;
+    let model_transform = scale;
 
     // view transform
     let camera = Camera::new(
@@ -205,9 +193,9 @@ fn render_triangles(models: &Vec<Model>, ctx: &mut RenderContext) {
             }
 
             // projection transform
-            // for i in 0..3 {
-            //     vertices[i] = (project_transform * vertices[i].extend(1.)).truncate();
-            // }
+            for i in 0..3 {
+                // vertices[i] = (project_transform * vertices[i].extend(1.)).truncate();
+            }
 
             let n = (vertices[2] - vertices[0]).cross(vertices[1] - vertices[0]);
             let intensity = light_dir.dot(n.normalize());
