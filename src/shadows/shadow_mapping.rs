@@ -1,3 +1,5 @@
+use glam::Vec3;
+
 /// Shadow mapping is a technique used in real-time rendering to simulate shadows in a scene.
 /// It involves rendering the scene from the light's perspective to create a depth map,
 /// which stores the distance from the light to the nearest surface. This depth information
@@ -14,3 +16,15 @@
 /// 3. Compare the transformed depth with the depth value stored in the depth texture.
 /// 4. If the pixel's depth is greater than the value in the depth texture, it is in shadow;
 ///    otherwise, it is illuminated.
+struct ShadowMapping {
+    // The depth texture stores the distance from the light to the nearest surface.
+    depth_texture: Vec<f32>,
+    // The light's position in the scene.
+    light_position: Vec3,
+    // The light's direction in the scene.
+    light_direction: Vec3,
+    // The camera's position in the scene.
+    camera_position: Vec3,
+    // The camera's direction in the scene.
+    camera_direction: Vec3,
+}

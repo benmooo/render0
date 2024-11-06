@@ -1,4 +1,4 @@
-/// shading from environment lighting
+// shading from environment lighting
 // informally named image-based lighting
 
 // how to use it to shade a point(without shadows)

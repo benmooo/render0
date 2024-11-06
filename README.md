@@ -13,3 +13,21 @@
 * tangent space normal mapping
 * shadow mapping
 * ambient occlusion
+
+
+```py
+def main():
+    # setup window
+    el = EventLoop()
+    window = WindowBuilder().build(el)
+    context = softbuffer.Context(window)
+    surface = softbuffer.Surface(context, window)
+
+    # model
+    models = load_model()
+
+    texture = load_texture()
+    (w, h) = (texture.size().width, texture.size().height)
+```
+
+![render0](https://upload.wikimedia.org/wikipedia/commons/d/d1/Rendering_eq.png)

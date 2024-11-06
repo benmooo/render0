@@ -1,3 +1,4 @@
+mod effects;
 mod utils;
 
 use glam::{Mat4, Vec2, Vec3, Vec4Swizzles};
@@ -74,8 +75,8 @@ fn main() -> anyhow::Result<()> {
                 let mut ctx =
                     RenderContext::new(&mut buffer, viewport, &mut zbuf, &diffuse_texture);
 
-                render_triangles(&models, &mut ctx);
-                // render_wireframe(&models, &mut ctx);
+                // render_triangles(&models, &mut ctx);
+                render_wireframe(&models, &mut ctx);
                 buffer.present().unwrap();
             }
             Event::WindowEvent {
