@@ -1,15 +1,15 @@
 [package]
 name = "render0"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.79"
-glam = "0.25.0"
-rand = "0.8.5"
-softbuffer = "0.4.1"
+anyhow = "1.0.97"
+glam = "0.30.1"
+rand = "0.9.0"
+softbuffer = "0.4.6"
 tinytga = "0.5.0"
-tobj = "4.0.0"
-winit = "0.29.10"
+tobj = "4.0.3"
+winit = "0.30.9"

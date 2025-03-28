@@ -1,5 +1,6 @@
 mod enviornment_mapping;
-mod shadow_mapping;
+pub mod shadow_mapping;
+
 pub fn pcf() {
     // PCF (Percentage Closer Filtering) is a technique used to determine shadow intensity by averaging
     // the depth values of multiple samples. The basic equation for PCF can be represented as:
@@ -14,7 +15,7 @@ pub fn pcf() {
     //
     // This results in a smoother transition of shadows by blending the results of multiple samples,
     // reducing the harshness of shadow edges.
-    unimplemented!()
+    todo!()
 }
 
 pub fn pcss() {

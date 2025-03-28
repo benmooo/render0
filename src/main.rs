@@ -2,7 +2,7 @@ mod effects;
 mod utils;
 
 use glam::{Mat4, Vec2, Vec3, Vec4Swizzles};
-use rand::{thread_rng, Rng};
+use rand::{Rng, rng};
 use std::f32::consts::PI;
 use std::num::NonZeroU32;
 use std::rc::Rc;
@@ -11,95 +11,129 @@ use utils::camera::Camera;
 use utils::draw::draw_line;
 use utils::model::{load_model, load_texture};
 use utils::triangle::draw_triangle;
-use winit::dpi::PhysicalSize;
-use winit::event::{Event, WindowEvent};
-use winit::event_loop::{ControlFlow, EventLoop};
-use winit::window::WindowBuilder;
+use winit::application::ApplicationHandler;
+use winit::event::{DeviceEvent, DeviceId, WindowEvent};
+use winit::event_loop::{ActiveEventLoop, EventLoop};
+use winit::window::{Window, WindowId};
 
-fn main() -> anyhow::Result<()> {
-    // setup window
-    let el = EventLoop::new()?;
-    let window = Rc::new(
-        WindowBuilder::new()
-            .with_title("render0")
-            .with_inner_size(PhysicalSize::new(1200, 1200))
-            .build(&el)?,
-    );
-    let context = softbuffer::Context::new(window.clone()).unwrap();
-    let mut surface = softbuffer::Surface::new(&context, window.clone()).unwrap();
+struct State {
+    window: Option<Window>,
+}
 
-    // model
-    let models = load_model();
+impl Default for State {
+    fn default() -> Self {
+        Self { window: None }
+    }
+}
 
-    let texture = load_texture();
-    let (w, h) = (texture.size().width, texture.size().height);
-
-    let mut ps = vec![];
-    ps.resize_with((w * h) as usize, || 0);
-    for p in texture.pixels() {
-        let index = ((h as i32 - p.position.y - 1) * w as i32 + p.position.x) as usize;
-        ps[index] = p.color;
+impl ApplicationHandler<()> for State {
+    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+        let window = event_loop
+            .create_window(Window::default_attributes())
+            .unwrap();
+        self.window = Some(window);
     }
 
-    // Get some information from the header
-
-    let diffuse_texture = DiffuseTexture {
-        pixels: &ps,
-        size: (w, h),
-    };
-
-    el.run(|event, elwt| {
-        elwt.set_control_flow(ControlFlow::Wait);
-
-        match event {
-            Event::WindowEvent {
-                window_id: _,
-                event: WindowEvent::RedrawRequested,
-            } => {
-                let (width, height) = {
-                    let size = window.inner_size();
-                    (size.width, size.height)
-                };
-                surface
-                    .resize(
-                        NonZeroU32::new(width).unwrap(),
-                        NonZeroU32::new(height).unwrap(),
-                    )
-                    .unwrap();
-
-                let viewport = Viewport::new(width, height, (0, 0));
-
-                let mut buffer = surface.buffer_mut().unwrap();
-                let mut zbuf = vec![f32::MIN; (width * height) as usize];
-
-                let mut ctx =
-                    RenderContext::new(&mut buffer, viewport, &mut zbuf, &diffuse_texture);
-
-                // render_triangles(&models, &mut ctx);
-                render_wireframe(&models, &mut ctx);
-                buffer.present().unwrap();
+    fn window_event(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        window_id: WindowId,
+        event: WindowEvent,
+    ) {
+        if let Some(window) = &self.window {
+            if window.id() != window_id {
+                return;
             }
-            Event::WindowEvent {
-                window_id: _,
-                event: WindowEvent::Resized(ps),
-            } => {
-                println!("resize: {:?}", ps);
-                surface
-                    .resize(
-                        NonZeroU32::new(ps.width).unwrap(),
-                        NonZeroU32::new(ps.height).unwrap(),
-                    )
-                    .unwrap()
+            match event {
+                WindowEvent::RedrawRequested => {
+                    let (width, height) = {
+                        let size = window.inner_size();
+                        (size.width, size.height)
+                    };
+
+                    //  softbuffer
+                    let context = softbuffer::Context::new(Rc::new(window)).unwrap();
+                    let mut surface = softbuffer::Surface::new(&context, Rc::new(window)).unwrap();
+                    surface
+                        .resize(
+                            NonZeroU32::new(width).unwrap(),
+                            NonZeroU32::new(height).unwrap(),
+                        )
+                        .unwrap();
+
+                    let viewport = Viewport::new(width, height, (0, 0));
+
+                    let mut buffer = surface.buffer_mut().unwrap();
+                    let mut zbuf = vec![f32::MIN; (width * height) as usize];
+
+                    //  model
+                    let models = load_model();
+
+                    let texture = load_texture();
+                    let (w, h) = (texture.size().width, texture.size().height);
+
+                    let mut ps = vec![];
+                    ps.resize_with((w * h) as usize, || 0);
+                    for p in texture.pixels() {
+                        let index =
+                            ((h as i32 - p.position.y - 1) * w as i32 + p.position.x) as usize;
+                        ps[index] = p.color;
+                    }
+
+                    let diffuse_texture = DiffuseTexture {
+                        pixels: &ps,
+                        size: (w, h),
+                    };
+
+                    let mut ctx =
+                        RenderContext::new(&mut buffer, viewport, &mut zbuf, &diffuse_texture);
+                    // render_triangles(&models, &mut ctx);
+                    render_wireframe(&models, &mut ctx);
+                    buffer.present().unwrap();
+                }
+                WindowEvent::Resized(ps) => {
+                    println!("resize: {:?}", ps);
+
+                    let context = softbuffer::Context::new(Rc::new(window)).unwrap();
+                    let mut surface = softbuffer::Surface::new(&context, Rc::new(window)).unwrap();
+
+                    surface
+                        .resize(
+                            NonZeroU32::new(ps.width).unwrap(),
+                            NonZeroU32::new(ps.height).unwrap(),
+                        )
+                        .unwrap();
+                }
+                WindowEvent::CloseRequested => {
+                    event_loop.exit();
+                }
+                _ => {}
             }
-            Event::WindowEvent {
-                window_id: _,
-                event: WindowEvent::CloseRequested,
-            } => {
-                elwt.exit();
-            }
-            _ => {}
         }
-    })?;
+    }
+
+    fn device_event(
+        &mut self,
+        _event_loop: &ActiveEventLoop,
+        _device_id: DeviceId,
+        _event: DeviceEvent,
+    ) {
+    }
+
+    fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
+        if let Some(window) = &self.window {
+            window.request_redraw();
+        }
+    }
+}
+
+fn main() -> anyhow::Result<()> {
+    let el = EventLoop::new()?;
+
+    let mut state = State::default();
+
+    el.run_app(&mut state)?;
+
     Ok(())
 }
 
@@ -226,11 +260,11 @@ fn to_screen_coords(p: (f32, f32), viewport: (u32, u32)) -> (u32, u32) {
 
 #[allow(unused)]
 fn generate_random_color() -> (u32, u32, u32) {
-    let mut rng = thread_rng();
+    let mut rng = rng();
     (
-        rng.gen_range(0..256),
-        rng.gen_range(0..256),
-        rng.gen_range(0..256),
+        rng.random_range(0..256),
+        rng.random_range(0..256),
+        rng.random_range(0..256),
     )
 }
 
@@ -293,39 +327,3 @@ fn screen_to_ndc(p: (i32, i32), viewport: Viewport) -> Vec3 {
 
     Vec3::from_array([x, y, 1.])
 }
-
-// for f in mesh.indices.windows(3).step_by(3) {
-//     let mut vertices = [Vec3::default(); 3];
-//     let mut tex_coords = [Vec2::default(); 3];
-
-//     // Access vertices of the face using face_indices
-//     for (i, v) in f
-//         .iter()
-//         .map(|&v| &mesh.positions[v as usize * 3..(v + 1) as usize * 3])
-//         .enumerate()
-//     {
-//         vertices[i] = Vec3::from_slice(v);
-//     }
-
-//     for (i, v) in f
-//         .iter()
-//         .map(|&v| &mesh.texcoords[v as usize * 2..(v + 1) as usize * 2])
-//         .enumerate()
-//     {
-//         tex_coords[i] = Vec2::from_slice(v);
-//     }
-
-//     let n = (vertices[2] - vertices[0]).cross(vertices[1] - vertices[0]);
-//     let intensity = light_dir.dot(n.normalize());
-
-//     if intensity < 0. {
-//         continue;
-//     }
-
-//     let volumn = (intensity * 255.).floor() as u32;
-//     let color = (volumn, volumn, volumn);
-//     let color = (color.0 << 16) | (color.1 << 8) | color.2;
-
-//     draw_triangle(&vertices, &tex_coords, ctx, color);
-//     // draw_triangle(&vertices, &tex_coords, ctx);
-// }

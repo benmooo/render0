@@ -23,3 +23,30 @@ magnetic fields each oscillate along a single line)
 
 In Physical optics, light is modeled as an electromagnetic transverse wave, a wave that oscillates
 the electirc and magnetic fields perpendicular to the direction of propagation. The O
+
+### Light Sources
+
+The impact of lighting on our example shading model was quite simple it provided a dominant direction for shading.
+of course, lighting in the real world can be quite complex. There can be multiple light sources each with ites own
+size, shape, color, and intensity; indirect lighting adds even more variation. As we will see in the future, physically based,
+photorealistic shading models need to take all these parameters into account.
+
+In contrast, stylized shading models may use lighting in may different ways, depending on the needs of the
+application and visual style. Some highly stylized models may have no concept of lighting at all,
+or (like our Gooch shading example) may only use it to provide some simple directionality.
+
+The next step in lighting complexity is for the shading model to react to the presence or absence of light
+in a binary way. A surface shaded with such a model would have one appearance when lit nad a different appearance
+when unaffected by light. This implies some criteria for distinguishing the two cases: distance from light sources,
+shadowing(which will be discussed later), whether the surface is facing away from the light source(i.e.
+the angle between the surface normal n and the lgiht vector l is greater than 90 degree), or some combination of these factors.
+
+It's a small step from the binary presence or absence of light to a continous scale of light intensities.
+This could be expressed as simple interpolation between absence and full presence, which implies a bounded
+range for the intensity, perhaps 0 to 1, or as an unbounded quantity that affects the shading in some other way. A common
+option for the latter is to factor the shading model into lit and unlit parts, with the light intensity k li
+linearly scaling the lit part:
+
+
+One of the most important tasks of a material system is dividing various shader functions into separate
+elements and controlling how these are combined. There are many cases where this type

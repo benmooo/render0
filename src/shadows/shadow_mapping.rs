@@ -16,15 +16,15 @@ use glam::Vec3;
 /// 3. Compare the transformed depth with the depth value stored in the depth texture.
 /// 4. If the pixel's depth is greater than the value in the depth texture, it is in shadow;
 ///    otherwise, it is illuminated.
-struct ShadowMapping {
+pub struct ShadowMapping {
     // The depth texture stores the distance from the light to the nearest surface.
-    depth_texture: Vec<f32>,
+    pub depth_texture: Vec<f32>,
     // The light's position in the scene.
-    light_position: Vec3,
+    pub light_position: Vec3,
     // The light's direction in the scene.
-    light_direction: Vec3,
+    pub light_direction: Vec3,
     // The camera's position in the scene.
-    camera_position: Vec3,
+    pub camera_position: Vec3,
     // The camera's direction in the scene.
-    camera_direction: Vec3,
+    pub camera_direction: Vec3,
 }
